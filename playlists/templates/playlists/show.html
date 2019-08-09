@@ -133,6 +133,7 @@
                 
                     <div class="alt-service-item">
                         
+<<<<<<< HEAD
                         <a href="{% url 'playlists:like_toggle' playlist.id %}">
                             <div class="alt-service-icon">
                             {% if user in playlist.likes.all %}
@@ -149,6 +150,26 @@
                     </div>
                 
                 <!-- End Features Item -->
+=======
+                    <span href="#" class="like" name ="{{playlist.id}}" value="Like">
+                        {% if user in playlist.liked_users.all %}
+                        <div class="alt-service-icon">
+                                <i class="fa fa-heart" id="like-icon"></i>
+                        </div>
+                        {% else %}
+                        <div class="alt-service-icon">
+                                <i class="fa fa-heart-o" id="like-icon"></i>
+                        </div>
+                        {% endif %}    
+                        <span id="count-{{ playlist.id }}" class="alt-services-title font-alt">좋아요{{ playlist.likes_count }}개
+                            <!-- <a href="{% url 'playlists:like_toggle' playlist.id %}">좋아요</a> -->
+                       </span> 
+                    </span>   
+                    
+                </div>
+            
+            <!-- End Features Item -->
+>>>>>>> cb45daafa4fbe0a5481d10cafb5e408b6c7a9c83
 
             </div>
             <!-- End Features -->
