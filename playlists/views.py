@@ -2,9 +2,16 @@ from django.shortcuts import render, redirect, get_object_or_404
 from .models import Playlist, Comment
 from musics.models import Music
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from musics.models import Music
 from users.models import User
 import pdb
+import json
+from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
+from django.core.serializers.json import DjangoJSONEncoder
+from datetime import datetime
+from django.forms.models import model_to_dict
+
 
 # 플레이리스트 메인페이지
 def main(request):
@@ -87,21 +94,30 @@ def delete(request, id):
     return redirect('playlists:main')
 
 
+
 # 댓글생성
+@require_POST
+@login_required
 def create_comment(request, playlist_id):
     user = request.user
     if user.is_anonymous:
         return redirect('account_login')
 
     if request.method == "POST":
-        user = request.user
-        if user.is_anonymous:
-            return redirect('account_login')
-        else:
-            playlist = get_object_or_404(Playlist, pk=playlist_id)
-            message = request.POST.get('message')
-            Comment.objects.create(writer=user, playlist=playlist, message=message)
-            return redirect('playlists:show', playlist_id)
+        playlist = get_object_or_404(Playlist, pk=playlist_id)
+        message = request.POST.get('message')
+        comment = Comment.objects.create(writer=user, playlist=playlist, message=message)
+
+        context = {
+            'writer': user.username,
+            'message': comment.message,
+            'is_same': user == comment.writer,
+            'comment_pk': comment.pk,
+            'created_at': comment.created_at.strftime('%Y/%m/%d %H:%M'),
+            'writer_id': comment.writer.id,
+            'writer_image_url': comment.writer.image.url
+        }
+        return HttpResponse(json.dumps(context, cls=DjangoJSONEncoder))
 
 
 # 댓글삭제
@@ -113,21 +129,24 @@ def delete_comment(request, comment_id):
 
 
 # 좋아요
+@require_POST
+@login_required
 def like_toggle(request, playlist_id):
-    user = request.user
-    if user.is_anonymous:
-        return redirect('account_login')
     playlist = get_object_or_404(Playlist, pk=playlist_id)
+    playlist_like, playlist_like_created = playlist.like_set.get_or_create(creator=request.user)
 
-    is_like = user in playlist.likes.all()
-
-    if is_like:
-        playlist.likes.remove(user)
+    if not playlist_like_created:
+        playlist_like.delete()
+        result = "like_cancel"
     else:
-        playlist.likes.add(user)
+        result ="like"
 
-    return redirect('playlists:show', playlist_id)
+    context = {
+        'likes_count':playlist.likes_count,
+        'result': result
+    }    
 
+    return HttpResponse(json.dumps(context), content_type="application/json")
 
 # 태그 검색
 def tag(request, tag_id):
